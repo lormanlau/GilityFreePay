@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+
+    <RelativeLayout
+        android:id="@+id/root_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:ignore="UselessParent">
+
+        <!-- this is the collapsed layout -->
+
+        <LinearLayout
+            android:id="@+id/info_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/priceLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Your purchase was" />
+
+            <TextView
+                android:id="@+id/costLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="It cost veridium" />
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/container_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <ImageView
+                android:id="@+id/screenshotButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/colorPrimary"
+                android:src="@drawable/ic_launcher_foreground" />
+
+        </RelativeLayout>
+        <!-- this is the expanded layout -->
+    </RelativeLayout>
+</FrameLayout>
