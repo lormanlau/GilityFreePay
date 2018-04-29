@@ -6,29 +6,152 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
-import android.hardware.display.VirtualDisplay;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
 import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import org.stellar.sdk.AssetTypeNative;
+import org.stellar.sdk.KeyPair;
+import org.stellar.sdk.Memo;
+import org.stellar.sdk.PaymentOperation;
+import org.stellar.sdk.Server;
+import org.stellar.sdk.Transaction;
+import org.stellar.sdk.responses.AccountResponse;
+import org.stellar.sdk.responses.SubmitTransactionResponse;
+
+import java.io.IOException;
 import java.text.DecimalFormat;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 
 public class FloatingWidgetService extends Service {
 
     private View mFloatingView, infoView, containerView;
     private WindowManager mWindowManager;
     private String TAG = "FloatingWidgetService";
+    private org.stellar.sdk.KeyPair mPair;
+    private org.stellar.sdk.KeyPair mPair2;
+    private Server server;
+
+
+    private void createStellarAccount(){
+        server = new Server("https://horizon-testnet.stellar.org");
+        mPair = org.stellar.sdk.KeyPair.random();
+        String friendbotUrl = String.format(
+                "https://friendbot.stellar.org/?addr=%s",
+                mPair.getAccountId());
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url(friendbotUrl)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                Log.i(TAG, "onResponse: " + response);
+                AccountResponse account = null;
+                try {
+                    account = server.accounts().account(mPair);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                Log.i(TAG, "Balances for account " + mPair.getSecretSeed());
+                for (AccountResponse.Balance balance : account.getBalances()) {
+                    Log.i(TAG, String.format(
+                            "Type: %s, Code: %s, Balance: %s",
+                            balance.getAssetType(),
+                            balance.getAssetCode(),
+                            balance.getBalance()));
+                }
+            }
+        });
+        mPair2 = org.stellar.sdk.KeyPair.random();
+        friendbotUrl = String.format(
+                "https://friendbot.stellar.org/?addr=%s",
+                mPair2.getAccountId());
+        request = new Request.Builder()
+                .url(friendbotUrl)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                Log.i(TAG, "onResponse: " + response);
+//
+                AccountResponse account = null;
+                try {
+                    account = server.accounts().account(mPair2);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                Log.i(TAG, "Balances for account " + mPair2.getSecretSeed());
+                for (AccountResponse.Balance balance : account.getBalances()) {
+                    Log.i(TAG, String.format(
+                            "Type: %s, Code: %s, Balance: %s",
+                            balance.getAssetType(),
+                            balance.getAssetCode(),
+                            balance.getBalance()));
+                }
+            }
+        });
+
+    };
+
+    private void stellarTransaction(String amount) throws IOException {
+        org.stellar.sdk.Network.useTestNetwork();
+
+        KeyPair source = KeyPair.fromSecretSeed(mPair2.getSecretSeed());
+        KeyPair destination = KeyPair.fromAccountId(mPair.getAccountId());
+        // First, check to make sure that the destination account exists.
+        // You could skip this, but if the account does not exist, you will be charged
+        // the transaction fee when the transaction fails.
+        // It will throw HttpResponseException if account does not exist or there was another error.
+        server.accounts().account(destination);
+        // If there was no error, load up-to-date information on your account.
+        AccountResponse sourceAccount = server.accounts().account(source);
+        // Start building the transaction.
+        Transaction transaction = new Transaction.Builder(sourceAccount)
+                .addOperation(new PaymentOperation.Builder(destination, new AssetTypeNative(), "10").build())
+                .addMemo(Memo.text("Test Transaction"))
+                .build();
+        // Sign the transaction to prove you are actually the person sending it.
+        transaction.sign(source);
+
+        // And finally, send it off to Stellar!
+        try {
+            SubmitTransactionResponse response = server.submitTransaction(transaction);
+            Log.i(TAG, "createStellarNetwork: " + response);
+        } catch (Exception e) {
+            Log.i(TAG, "error: " + e);
+            // If the result is unknown (no response body, timeout etc.) we simply resubmit
+            // already built transaction:
+            // SubmitTransactionResponse response = server.submitTransaction(transaction);
+        }
+    }
+
+
 
 
     @Nullable
@@ -65,6 +188,8 @@ public class FloatingWidgetService extends Service {
 
         infoView = mFloatingView.findViewById(R.id.info_view);
         containerView = mFloatingView.findViewById(R.id.container_view);
+
+        createStellarAccount();
     }
 
     private void setOnClickRootView(){
@@ -93,6 +218,7 @@ public class FloatingWidgetService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(LocalBroadcastReciever, filter);
     }
 
+
     BroadcastReceiver LocalBroadcastReciever = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -100,11 +226,15 @@ public class FloatingWidgetService extends Service {
                 case "UPDATE_WIDGET":
                     //update calculation
                     double price = intent.getDoubleExtra("price", 0);
+                    DecimalFormat df = new DecimalFormat("0.00");
+
+//                    stellarTransaction(df.format(price).toString());
+                    
                     Log.i(TAG, "price: " + Double.toString(price));
                     Log.i(TAG, "cost: " + calcThePrice(price));
                     TextView costLabel = infoView.findViewById(R.id.costLabel);
                     TextView priceLabel = infoView.findViewById(R.id.priceLabel);
-                    priceLabel.setText("Your Purchase was: $"+ Double.toString(price));
+                    priceLabel.setText("Your Purchase was: $"+ df.format(price));
                     costLabel.setText("Veridium donated: $" + calcThePrice(price));
 
                     infoView.setVisibility(View.VISIBLE);
