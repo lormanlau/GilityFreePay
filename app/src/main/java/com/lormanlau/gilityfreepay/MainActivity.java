@@ -137,17 +137,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void grabTextFromPhoto(Bitmap bitmap){
-        TextRecognizer textRecognizer = new TextRecognizer.Builder(this).build();
-        Frame frame = new Frame.Builder().setBitmap(bitmap).build();
-        SparseArray<TextBlock> text = textRecognizer.detect(frame);
-        Log.i(TAG, "grabTextFromPhoto");
-        for (int i = 0; i < text.size(); i++) {
-            TextBlock textBlock = text.valueAt(i);
-            Log.i(TAG, "grabTextFromPhoto: " + textBlock.getValue());
-        }
-    }
-
 
     @Override
     protected void onDestroy() {

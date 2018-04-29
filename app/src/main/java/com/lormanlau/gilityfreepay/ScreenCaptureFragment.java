@@ -23,6 +23,8 @@ import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 
 import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ScreenCaptureFragment extends android.support.v4.app.Fragment {
 
@@ -174,26 +176,40 @@ public class ScreenCaptureFragment extends android.support.v4.app.Fragment {
         Frame frame = new Frame.Builder().setBitmap(bitmap).build();
         SparseArray<TextBlock> text = textRecognizer.detect(frame);
         Log.i(TAG, "grabTextFromPhoto");
+        Pattern p = Pattern.compile("\\d+(\\.\\d+)?");
         for (int i = 0; i < text.size(); i++) {
-            TextBlock textBlock = text.valueAt(i);
-            if (textBlock.toString().matches(".*\\d+.*")){
-                Log.i(TAG, "numbers: " + textBlock.getValue());
-                StringBuilder sb = new StringBuilder();
-                boolean found = false;
-                for(String letter : textBlock.getValue().split("")){
-                    if(letter.matches("[0-9]") || letter.matches("[.]")){
-                        sb.append(letter);
-                        found = true;
-                    } else if(found){
-                        // If we already found a digit before and this char is not a digit, stop looping
-                        break;
-                    }
-                }
-                if (sb.toString().contains(".")) {
-                    sendFoundPriceBroadcast(sb.toString());
+            Matcher m =p.matcher(text.valueAt(i).getValue());
+            while (m.find()) {
+                Log.i(TAG, "grabTextFromPhoto: " + m.group());
+                if (m.group().contains(".")){
+                    sendFoundPriceBroadcast(m.group());
                 }
             }
+//            if (textBlock.toString().matches(".*[0-9]+.*")){
+//                Log.i(TAG, "numbers: " + textBlock.getValue());
+//                StringBuilder sb = new StringBuilder();
+//                boolean found = false;
+//                for(String letter : textBlock.getValue().split("")){
+//                    if(letter.matches("[0-9]") || letter.matches("[.]")){
+//                        sb.append(letter);
+//                        found = true;
+//                    } else if(found){
+//                        // If we already found a digit before and this char is not a digit, stop looping
+//                        break;
+//                    }
+//                }
+//                if (sb.toString().contains(".")) {
+//                    sendFoundPriceBroadcast(sb.toString());
+//                }
         }
+    }
+
+
+    public Bitmap getResizedBitmap(Bitmap image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int nheight = (480 * height)/ width;
+        return Bitmap.createScaledBitmap(image, width, nheight, true);
     }
 
     private void sendFoundPriceBroadcast(String stringPrice){

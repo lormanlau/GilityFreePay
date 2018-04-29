@@ -19,19 +19,22 @@
             android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
             android:orientation="vertical"
+            android:padding="8dp"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/priceLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Your purchase was" />
+                android:text="Your purchase was"
+                android:textColor="@color/common_google_signin_btn_text_dark_default" />
 
             <TextView
                 android:id="@+id/costLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="It cost veridium" />
+                android:text="It cost veridium"
+                android:textColor="@color/common_google_signin_btn_text_dark_default" />
         </LinearLayout>
 
         <RelativeLayout
